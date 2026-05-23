@@ -1,0 +1,18 @@
+[Unit]
+Description=Solana Telegram Sniper Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/sol-sniper-bot
+EnvironmentFile=/opt/sol-sniper-bot/.env
+ExecStart=/opt/sol-sniper-bot/venv/bin/python sol_bot.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

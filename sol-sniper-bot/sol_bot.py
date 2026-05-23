@@ -1,5 +1,7 @@
+import argparse
 import os
 import re
+import sys
 import time
 import logging
 import requests
@@ -15,22 +17,31 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ── Credentials ──────────────────────────────────────────────────────────────
+# ── Credentials ───────────────────────────────────────────────────────────────
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID        = os.getenv("CHAT_ID")
-SOLANA_RPC     = os.getenv("SOLANA_RPC", "https://api.mainnet-beta.solana.com")
 
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
+bot = telebot.TeleBot(TELEGRAM_TOKEN) if TELEGRAM_TOKEN else None
+
+# ── RPC rotation (tries each in order, skips on 429 / error) ─────────────────
+_user_rpc = os.getenv("SOLANA_RPC")
+RPC_ENDPOINTS: list[str] = list(dict.fromkeys(filter(None, [
+    _user_rpc,
+    "https://api.mainnet-beta.solana.com",
+    "https://rpc.ankr.com/solana",
+])))
 
 # ── Tunable parameters ────────────────────────────────────────────────────────
-SPIKE_MULTIPLIER      = float(os.getenv("SPIKE_MULTIPLIER", 5.0))   # 5x volume spike
-MIN_5MIN_VOL          = float(os.getenv("MIN_5MIN_VOL", 30_000))     # $30k
-MIN_LIQUIDITY_USD     = float(os.getenv("MIN_LIQUIDITY_USD", 15_000))# $15k
-MAX_WHALE_PCT         = float(os.getenv("MAX_WHALE_PCT", 60.0))      # top-10 holders <60%
-MAX_TOKEN_AGE_HOURS   = float(os.getenv("MAX_TOKEN_AGE_HOURS", 1.0)) # new pairs only
-ALERT_COOLDOWN_MIN    = int(os.getenv("ALERT_COOLDOWN_MIN", 30))
-CHECK_INTERVAL_SEC    = int(os.getenv("CHECK_INTERVAL_SEC", 45))
-HEARTBEAT_INTERVAL    = int(os.getenv("HEARTBEAT_INTERVAL", 3600))
+SPIKE_MULTIPLIER    = float(os.getenv("SPIKE_MULTIPLIER", 5.0))
+MIN_5MIN_VOL        = float(os.getenv("MIN_5MIN_VOL", 20_000))
+MIN_LIQUIDITY_USD   = float(os.getenv("MIN_LIQUIDITY_USD", 10_000))
+MAX_WHALE_PCT       = float(os.getenv("MAX_WHALE_PCT", 60.0))
+MAX_RUG_SCORE       = float(os.getenv("MAX_RUG_SCORE", 500))   # RugCheck normalised 0-1000
+MIN_LP_LOCKED_PCT   = float(os.getenv("MIN_LP_LOCKED_PCT", 50.0))
+MAX_TOKEN_AGE_HOURS = float(os.getenv("MAX_TOKEN_AGE_HOURS", 1.0))
+ALERT_COOLDOWN_MIN  = int(os.getenv("ALERT_COOLDOWN_MIN", 30))
+CHECK_INTERVAL_SEC  = int(os.getenv("CHECK_INTERVAL_SEC", 45))
+HEARTBEAT_INTERVAL  = int(os.getenv("HEARTBEAT_INTERVAL", 3600))
 
 # ── State ─────────────────────────────────────────────────────────────────────
 seen_pairs: dict[str, datetime] = {}
@@ -47,7 +58,7 @@ def _dex_headers() -> dict:
     return {"User-Agent": "Mozilla/5.0 (compatible; SolSniperBot/1.0)"}
 
 
-# ── 1. Fetch Solana pairs from DexScreener ────────────────────────────────────
+# ── 1. Fetch Solana pairs ─────────────────────────────────────────────────────
 def fetch_solana_pairs() -> list[dict]:
     queries = ["SOL", "USDC", "USDT"]
     seen_addrs: dict[str, dict] = {}
@@ -71,7 +82,6 @@ def fetch_solana_pairs() -> list[dict]:
     return list(seen_addrs.values())
 
 
-
 # ── 2. Volume spike detection ─────────────────────────────────────────────────
 def volume_spike_detected(pair: dict) -> bool:
     vol = pair.get("volume", {})
@@ -81,116 +91,169 @@ def volume_spike_detected(pair: dict) -> bool:
     if v5 < MIN_5MIN_VOL:
         return False
     if v1h <= 0:
-        # no hourly data yet — treat large 5-min volume alone as a spike
         return v5 >= MIN_5MIN_VOL * 2
-    expected_5min = v1h / 12.0
-    return v5 > SPIKE_MULTIPLIER * expected_5min
+    return v5 > SPIKE_MULTIPLIER * (v1h / 12.0)
 
 
-# ── 3. Token age filter ───────────────────────────────────────────────────────
+# ── 3. Token age ──────────────────────────────────────────────────────────────
 def is_fresh_pair(pair: dict) -> bool:
-    created_at_ms = pair.get("pairCreatedAt")
-    if not created_at_ms:
-        return True  # no data — don't filter out
-    created = datetime.fromtimestamp(created_at_ms / 1000, tz=timezone.utc)
+    ts = pair.get("pairCreatedAt")
+    if not ts:
+        return True
+    created = datetime.fromtimestamp(ts / 1000, tz=timezone.utc)
     age_h = (datetime.now(timezone.utc) - created).total_seconds() / 3600
     return age_h <= MAX_TOKEN_AGE_HOURS
 
 
-# ── 4. Whale concentration via Solana RPC ────────────────────────────────────
-def _rpc_post(payload: dict) -> dict:
-    resp = requests.post(
-        SOLANA_RPC,
-        json=payload,
-        headers={"Content-Type": "application/json"},
-        timeout=15,
-    )
-    resp.raise_for_status()
-    return resp.json()
+def age_str(pair: dict) -> str:
+    ts = pair.get("pairCreatedAt")
+    if not ts:
+        return "unknown"
+    age_s = datetime.now(timezone.utc).timestamp() - ts / 1000
+    return f"{age_s/60:.0f}m" if age_s < 3600 else f"{age_s/3600:.1f}h"
+
+
+# ── 4. RugCheck (primary safety filter) ──────────────────────────────────────
+def check_rugcheck(token_mint: str) -> tuple[bool, str, float]:
+    """
+    Returns (is_safe, risk_summary, lp_locked_pct).
+    Skips tokens with score > MAX_RUG_SCORE or LP lock < MIN_LP_LOCKED_PCT.
+    """
+    if not token_mint:
+        return True, "no mint", 0.0
+    try:
+        url  = f"https://api.rugcheck.xyz/v1/tokens/{token_mint}/report/summary"
+        resp = requests.get(url, timeout=12, headers=_dex_headers())
+        resp.raise_for_status()
+        data = resp.json()
+
+        score      = float(data.get("score_normalised") or 0)
+        lp_locked  = float(data.get("lpLockedPct") or 0)
+        risks      = data.get("risks", [])
+        danger_tags = [r["name"] for r in risks if r.get("level") == "danger"]
+        warn_tags   = [r["name"] for r in risks if r.get("level") == "warn"]
+
+        risk_parts = []
+        if danger_tags:
+            risk_parts.append("⛔ " + ", ".join(danger_tags[:2]))
+        elif warn_tags:
+            risk_parts.append("⚠️ " + ", ".join(warn_tags[:2]))
+        else:
+            risk_parts.append("✅ clean")
+
+        summary = f"score {score:.0f} | LP {lp_locked:.1f}% locked | {', '.join(risk_parts)}"
+
+        if score > MAX_RUG_SCORE:
+            return False, summary, lp_locked
+        if lp_locked < MIN_LP_LOCKED_PCT:
+            return False, summary, lp_locked
+
+        return True, summary, lp_locked
+
+    except Exception as e:
+        logger.warning(f"RugCheck failed ({token_mint[:8]}…): {e}")
+        return True, "rug check unavailable", 0.0
+
+
+# ── 5. Whale concentration (Solana RPC with fallback) ─────────────────────────
+def _rpc_post(payload: dict) -> dict | None:
+    for endpoint in RPC_ENDPOINTS:
+        try:
+            resp = requests.post(
+                endpoint, json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=12,
+            )
+            if resp.status_code == 429:
+                logger.debug(f"RPC 429 on {endpoint}, trying next")
+                continue
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.debug(f"RPC error on {endpoint}: {e}")
+    return None
 
 
 def check_whale_concentration(token_mint: str) -> tuple[bool, str]:
-    """
-    Returns (is_safe, description).
-    Uses Solana RPC getTokenLargestAccounts + getTokenSupply (no API key needed).
-    """
     if not token_mint:
-        return True, "No mint address"
-
+        return True, "no mint"
     try:
-        # Largest holders (up to 20)
-        holders_data = _rpc_post({
+        holders_resp = _rpc_post({
             "jsonrpc": "2.0", "id": 1,
             "method": "getTokenLargestAccounts",
             "params": [token_mint, {"commitment": "finalized"}],
         })
-        holders = holders_data.get("result", {}).get("value", [])
-        if not holders:
-            return True, "No holder data"
+        if not holders_resp:
+            return True, "RPC unavailable"
 
-        # Total supply
-        supply_data = _rpc_post({
+        holders = holders_resp.get("result", {}).get("value", [])
+        if not holders:
+            return True, "no holder data"
+
+        supply_resp = _rpc_post({
             "jsonrpc": "2.0", "id": 2,
             "method": "getTokenSupply",
             "params": [token_mint],
         })
-        supply_value = supply_data.get("result", {}).get("value", {})
-        total_supply = float(supply_value.get("uiAmount") or 0)
+        if not supply_resp:
+            return True, "supply RPC unavailable"
 
-        if total_supply <= 0:
-            return True, "Supply unknown"
+        total = float((supply_resp.get("result", {}).get("value") or {}).get("uiAmount") or 0)
+        if total <= 0:
+            return True, "supply unknown"
 
-        top10_amount = sum(float(h.get("uiAmount") or 0) for h in holders[:10])
-        concentration = (top10_amount / total_supply) * 100
-
-        is_safe = concentration <= MAX_WHALE_PCT
-        label = f"{concentration:.1f}% held by top 10"
-        return is_safe, label
+        top10 = sum(float(h.get("uiAmount") or 0) for h in holders[:10])
+        pct = top10 / total * 100
+        is_safe = pct <= MAX_WHALE_PCT
+        return is_safe, f"{pct:.1f}% held by top 10"
 
     except Exception as e:
-        logger.warning(f"Whale check failed ({token_mint[:8]}...): {e}")
-        return True, "Whale check unavailable"
+        logger.warning(f"Whale check error ({token_mint[:8]}…): {e}")
+        return True, "whale check unavailable"
 
 
-# ── 5. Telegram alert ─────────────────────────────────────────────────────────
-def send_alert(pair: dict, whale_info: str) -> None:
-    base       = pair.get("baseToken", {})
-    quote      = pair.get("quoteToken", {})
-    name       = escape_md(base.get("name", "Unknown"))
-    symbol     = escape_md(base.get("symbol", "???"))
-    dex        = escape_md(pair.get("dexId", "").upper())
-    pair_addr  = pair.get("pairAddress", "")
-    mint       = base.get("address", "")
+# ── 6. Telegram / console alert ───────────────────────────────────────────────
+def send_alert(pair: dict, rug_summary: str, whale_info: str, dry_run: bool) -> None:
+    base      = pair.get("baseToken", {}) or {}
+    name      = escape_md(base.get("name", "Unknown"))
+    symbol    = escape_md(base.get("symbol", "???"))
+    dex       = escape_md((pair.get("dexId") or "").upper())
+    pair_addr = pair.get("pairAddress", "")
+    mint      = base.get("address", "")
 
-    vol        = pair.get("volume", {})
-    price_usd  = float(pair.get("priceUsd") or 0)
-    liq_usd    = float((pair.get("liquidity") or {}).get("usd") or 0)
-    v5         = float(vol.get("m5") or 0)
-    v1h        = float(vol.get("h1") or 0)
-    price_ch   = pair.get("priceChange", {})
-    ch5        = float(price_ch.get("m5") or 0)
-    ch1h       = float(price_ch.get("h1") or 0)
-
-    created_ms = pair.get("pairCreatedAt")
-    age_str    = "Unknown"
-    if created_ms:
-        age_s  = (datetime.now(timezone.utc).timestamp() * 1000 - created_ms) / 1000
-        age_str = f"{age_s/60:.0f}m ago" if age_s < 3600 else f"{age_s/3600:.1f}h ago"
+    vol       = pair.get("volume", {}) or {}
+    price_usd = float(pair.get("priceUsd") or 0)
+    liq_usd   = float((pair.get("liquidity") or {}).get("usd") or 0)
+    v5        = float(vol.get("m5") or 0)
+    v1h       = float(vol.get("h1") or 0)
+    pc        = pair.get("priceChange", {}) or {}
+    ch5       = float(pc.get("m5") or 0)
+    ch1h      = float(pc.get("h1") or 0)
+    listed    = escape_md(age_str(pair))
 
     msg = (
-        f"🚀 *SOLANA VOLUME SPIKE ALERT*\n\n"
-        f"🪙 *{name}* \\(`{escape_md(symbol)}`\\)\n"
-        f"🏦 DEX: `{dex}`\n"
-        f"⏱ Listed: {escape_md(age_str)}\n\n"
+        f"🚀 *SOLANA VOLUME SPIKE*\n\n"
+        f"🪙 *{name}* \\(`{symbol}`\\)\n"
+        f"🏦 DEX: `{dex}` \\| ⏱ Listed: `{listed}`\n\n"
         f"💵 Price: `${price_usd:.8g}`\n"
-        f"📈 5m chg: `{ch5:+.1f}%` \\| 1h chg: `{ch1h:+.1f}%`\n"
-        f"💧 Liquidity: `${liq_usd:,.0f}`\n"
-        f"🔊 Vol 5m: `${v5:,.0f}` \\| Vol 1h: `${v1h:,.0f}`\n"
+        f"📈 5m: `{ch5:+.1f}%` \\| 1h: `{ch1h:+.1f}%`\n"
+        f"💧 Liq: `${liq_usd:,.0f}`\n"
+        f"🔊 Vol 5m: `${v5:,.0f}` \\| 1h: `${v1h:,.0f}`\n\n"
+        f"🛡 Rug: {escape_md(rug_summary)}\n"
         f"🐳 Whale: {escape_md(whale_info)}\n\n"
-        f"🔗 [DexScreener](https://dexscreener.com/solana/{pair_addr})\n"
-        f"🔗 [Birdeye](https://birdeye.so/token/{mint})\n"
-        f"🔗 [Solscan](https://solscan.io/token/{mint})"
+        f"[DexScreener](https://dexscreener.com/solana/{pair_addr}) \\| "
+        f"[Birdeye](https://birdeye\\.so/token/{mint}) \\| "
+        f"[Solscan](https://solscan\\.io/token/{mint})"
     )
+
+    if dry_run:
+        print("\n" + "─" * 60)
+        print(f"[DRY RUN] Alert for {base.get('symbol')} ({pair_addr[:8]}…)")
+        print(f"  Liq ${liq_usd:,.0f}  Vol5m ${v5:,.0f}  Vol1h ${v1h:,.0f}")
+        print(f"  Rug: {rug_summary}")
+        print(f"  Whale: {whale_info}")
+        print("─" * 60)
+        return
 
     try:
         bot.send_message(
@@ -198,23 +261,31 @@ def send_alert(pair: dict, whale_info: str) -> None:
             parse_mode="MarkdownV2",
             disable_web_page_preview=True,
         )
-        logger.info(f"Alert sent → {symbol} ({pair_addr[:8]}...)")
+        logger.info(f"Alert → {base.get('symbol')} ({pair_addr[:8]}…)")
     except Exception as e:
         logger.error(f"Telegram send failed: {e}")
 
 
+def _tg(text: str, dry_run: bool) -> None:
+    if dry_run:
+        print(f"[DRY RUN] {text}")
+        return
+    if bot:
+        try:
+            bot.send_message(CHAT_ID, escape_md(text), parse_mode="MarkdownV2")
+        except Exception as e:
+            logger.warning(f"Telegram msg failed: {e}")
+
+
 # ── Main loop ─────────────────────────────────────────────────────────────────
-def main() -> None:
-    logger.info("🟢 Solana Sniper Bot starting…")
-    try:
-        ts = escape_md(datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))
-        bot.send_message(
-            CHAT_ID,
-            f"✅ *Solana Sniper Bot online*\nStarted at {ts}",
-            parse_mode="MarkdownV2",
-        )
-    except Exception as e:
-        logger.warning(f"Startup message failed: {e}")
+def main(dry_run: bool = False) -> None:
+    mode = "DRY RUN" if dry_run else "LIVE"
+    logger.info(f"🟢 Solana Sniper Bot starting [{mode}]")
+    _tg(
+        f"✅ Solana Sniper Bot online [{mode}]\n"
+        f"Started {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}",
+        dry_run,
+    )
 
     last_heartbeat = datetime.now(timezone.utc)
 
@@ -222,7 +293,6 @@ def main() -> None:
         now   = datetime.now(timezone.utc)
         pairs = fetch_solana_pairs()
 
-        # Evict cooldown records older than 2 h
         stale = [k for k, v in seen_pairs.items() if (now - v) > timedelta(hours=2)]
         for k in stale:
             del seen_pairs[k]
@@ -234,12 +304,10 @@ def main() -> None:
             if not pair_addr:
                 continue
 
-            # Cooldown guard
             last_seen = seen_pairs.get(pair_addr)
             if last_seen and (now - last_seen) < timedelta(minutes=ALERT_COOLDOWN_MIN):
                 continue
 
-            # Filters
             liq = float((pair.get("liquidity") or {}).get("usd") or 0)
             if liq < MIN_LIQUIDITY_USD:
                 continue
@@ -248,37 +316,66 @@ def main() -> None:
             if not volume_spike_detected(pair):
                 continue
 
-            # Whale check on base token mint
             mint = (pair.get("baseToken") or {}).get("address", "")
-            is_safe, whale_info = check_whale_concentration(mint)
-            if not is_safe:
-                logger.info(f"Skipped {pair_addr[:8]} — whale concentration too high ({whale_info})")
+
+            # RugCheck (primary — always run)
+            rug_safe, rug_summary, _ = check_rugcheck(mint)
+            if not rug_safe:
+                logger.info(f"Skipped {pair_addr[:8]} — rug risk ({rug_summary})")
                 continue
 
-            send_alert(pair, whale_info)
+            # Whale check (secondary — soft fail)
+            whale_safe, whale_info = check_whale_concentration(mint)
+            if not whale_safe:
+                logger.info(f"Skipped {pair_addr[:8]} — whale concentration ({whale_info})")
+                continue
+
+            send_alert(pair, rug_summary, whale_info, dry_run)
             seen_pairs[pair_addr] = now
             alerts_sent += 1
-            time.sleep(0.5)  # rate-limit Telegram
+            time.sleep(0.5)
 
-        # Heartbeat
         if (now - last_heartbeat).total_seconds() >= HEARTBEAT_INTERVAL:
-            try:
-                bot.send_message(
-                    CHAT_ID,
-                    f"🫀 Bot alive \\| {len(pairs)} pairs scanned \\| "
-                    f"{len(seen_pairs)} tracked",
-                    parse_mode="MarkdownV2",
-                )
-                last_heartbeat = now
-            except Exception as e:
-                logger.warning(f"Heartbeat failed: {e}")
+            _tg(
+                f"🫀 Bot alive | {len(pairs)} pairs scanned | {len(seen_pairs)} tracked",
+                dry_run,
+            )
+            last_heartbeat = now
 
         logger.info(
-            f"Cycle done — {len(pairs)} pairs checked, "
-            f"{alerts_sent} alerts sent, sleeping {CHECK_INTERVAL_SEC}s"
+            f"Cycle done — {len(pairs)} pairs, {alerts_sent} alerts, "
+            f"sleeping {CHECK_INTERVAL_SEC}s"
         )
         time.sleep(CHECK_INTERVAL_SEC)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Solana Telegram Sniper Bot")
+    parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Print alerts to console instead of sending to Telegram"
+    )
+    parser.add_argument(
+        "--test-cycle", action="store_true",
+        help="Run one cycle, print results, then exit"
+    )
+    args = parser.parse_args()
+
+    if args.test_cycle:
+        logger.info("Running single test cycle…")
+        pairs = fetch_solana_pairs()
+        logger.info(f"Got {len(pairs)} pairs")
+        hits = [p for p in pairs if volume_spike_detected(p)]
+        logger.info(f"Volume spikes detected: {len(hits)}")
+        for p in hits[:3]:
+            b = p.get("baseToken", {})
+            vol = p.get("volume", {})
+            liq = float((p.get("liquidity") or {}).get("usd") or 0)
+            logger.info(
+                f"  {b.get('symbol')} | liq ${liq:,.0f} | "
+                f"v5m ${float(vol.get('m5') or 0):,.0f} | "
+                f"v1h ${float(vol.get('h1') or 0):,.0f}"
+            )
+        sys.exit(0)
+
+    main(dry_run=args.dry_run)
