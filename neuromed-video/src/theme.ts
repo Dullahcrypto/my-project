@@ -13,6 +13,8 @@ export const C = {
 export const SANS = "'Geist', 'Helvetica Neue', Arial, sans-serif";
 export const MONO = "'Geist Mono', ui-monospace, monospace";
 
+import voice from './voice-manifest.json';
+
 export const FPS = 30;
 
 // Scene timeline (frames at 30 fps)
@@ -21,9 +23,13 @@ export const T = {
   promise: { from: 120, len: 120 },
   services: { from: 240, len: 480, each: 80 },
   steps: { from: 720, len: 180 },
-  cta: { from: 900, len: 150 },
+  // The end card stretches to fit the voiceover's call to action (see voiceover/generate.mjs).
+  cta: { from: 900, len: Math.max(150, voice.ctaFrames || 150) },
 };
-export const DURATION = 1050;
+export const DURATION = T.cta.from + T.cta.len;
+
+export type VoiceLine = { id: string; file: string; from: number; frames: number };
+export const VOICE: { enabled: boolean; lines: VoiceLine[] } = { enabled: !!voice.enabled, lines: (voice.lines || []) as VoiceLine[] };
 
 export const SERVICES = [
   { key: 'eeg', title: 'EEG & Video EEG', desc: 'Records your brain’s electrical activity' },

@@ -8,7 +8,9 @@
     "render:vertical": "remotion render NeuromedVertical out/neuromed-9x16.mp4 --codec=h264 --crf=18",
     "render:wide": "remotion render NeuromedWide out/neuromed-16x9.mp4 --codec=h264 --crf=18",
     "render": "npm run render:vertical && npm run render:wide",
-    "stills": "node render-stills.mjs"
+    "stills": "node render-stills.mjs",
+    "voices": "node voiceover/generate.mjs --voices",
+    "voice": "node voiceover/generate.mjs"
   },
   "dependencies": {
     "@remotion/cli": "4.0.535",

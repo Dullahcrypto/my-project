@@ -27,6 +27,23 @@ through the whole film. It changes shape per scene (three EEG traces, EMG spikes
 a travelling nerve impulse, a seizure burst that settles, a pharmacy shelf, the
 visit timeline) and ends by underlining the WhatsApp number.
 
+## Voiceover (ElevenLabs)
+
+The narration script is in `voiceover/SCRIPT.md`; the exact lines and timings are in
+`voiceover/lines.json`. The video stays silent until voice clips are generated.
+
+1. Put your ElevenLabs API key in the environment as `ELEVENLABS_API_KEY`
+   (cloud environment settings → secrets / environment variables; never in the repo or a chat).
+2. Choose a voice: `npm run voices` lists the voices in your account plus
+   Nigerian-accent voices from the ElevenLabs library.
+3. Generate: `ELEVENLABS_VOICE_ID=<voice id> npm run voice`
+   - saves one MP3 per line to `public/voice/` and writes `src/voice-manifest.json`
+   - lines that run long are sped up slightly (max ×1.12) to fit their scene
+   - the end card stretches so the WhatsApp number is never cut off
+4. `npm run render` to re-render both MP4s with the voice.
+
+To go back to silent, set `"enabled": false` in `src/voice-manifest.json`.
+
 ## Edit
 
 | To change… | Edit |

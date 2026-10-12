@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, Sequence } from 'remotion';
+import { AbsoluteFill, Audio, Sequence, staticFile } from 'remotion';
 import './fonts';
 import { Background } from './components/Background';
 import { BrandMark } from './components/BrandMark';
@@ -9,7 +9,7 @@ import { Hook } from './scenes/Hook';
 import { Promise as PromiseScene } from './scenes/Promise';
 import { Service } from './scenes/Service';
 import { Steps } from './scenes/Steps';
-import { SERVICES, T } from './theme';
+import { SERVICES, T, VOICE } from './theme';
 
 export const NeuromedVideo: React.FC = () => (
   <AbsoluteFill>
@@ -37,5 +37,11 @@ export const NeuromedVideo: React.FC = () => (
       <CTA />
     </Sequence>
     <BrandMark />
+    {VOICE.enabled &&
+      VOICE.lines.map((l) => (
+        <Sequence key={l.id} from={l.from} durationInFrames={l.frames + 6} name={`Voice ${l.id}`}>
+          <Audio src={staticFile(l.file)} />
+        </Sequence>
+      ))}
   </AbsoluteFill>
 );

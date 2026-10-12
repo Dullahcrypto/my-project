@@ -1,0 +1,16 @@
+{
+  "note": "Narration for the Neuromed Clinic explainer. 'at' is the second the line starts; it lines up with each scene.",
+  "voiceSettings": { "stability": 0.55, "similarity_boost": 0.8, "style": 0.15, "use_speaker_boost": true },
+  "lines": [
+    { "id": "01-hook",     "at": 0.4,  "slot": 3.6, "text": "Seizures. Numbness. Weakness. Stroke." },
+    { "id": "02-promise",  "at": 4.2,  "slot": 3.8, "text": "Neuromed Clinic finds answers for the brain, nerves and muscles." },
+    { "id": "03-eeg",      "at": 8.2,  "slot": 2.6, "text": "E.E.G. and video E.E.G." },
+    { "id": "04-emg",      "at": 10.9, "slot": 2.5, "text": "E.M.G. for your muscles." },
+    { "id": "05-ncs",      "at": 13.5, "slot": 2.5, "text": "Nerve conduction studies." },
+    { "id": "06-seizure",  "at": 16.2, "slot": 2.5, "text": "Seizure and epilepsy care." },
+    { "id": "07-stroke",   "at": 18.9, "slot": 2.5, "text": "Stroke management." },
+    { "id": "08-pharmacy", "at": 21.5, "slot": 2.6, "text": "And medication from our own pharmacy." },
+    { "id": "09-steps",    "at": 24.2, "slot": 5.6, "text": "Book. Consult. Get tested on site. Then treat, and follow up." },
+    { "id": "10-cta",      "at": 30.3, "slot": 7.4, "text": "Book on WhatsApp: zero eight one three, one zero two, six two two one. Neuromed Clinic, Jabi, Abuja." }
+  ]
+}
