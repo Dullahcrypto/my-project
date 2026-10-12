@@ -1,5 +1,67 @@
 {
-  "enabled": false,
-  "lines": [],
-  "ctaFrames": 150
+  "enabled": true,
+  "source": "ElevenLabs recording (voice: Gemnda, Podcast Narrative)",
+  "lines": [
+    {
+      "id": "01-hook",
+      "file": "voice/01-hook.mp3",
+      "from": 0,
+      "frames": 127
+    },
+    {
+      "id": "02-promise",
+      "file": "voice/02-promise.mp3",
+      "from": 124,
+      "frames": 127
+    },
+    {
+      "id": "03-eeg",
+      "file": "voice/03-eeg.mp3",
+      "from": 248,
+      "frames": 51
+    },
+    {
+      "id": "04-emg",
+      "file": "voice/04-emg.mp3",
+      "from": 322,
+      "frames": 80
+    },
+    {
+      "id": "05-ncs",
+      "file": "voice/05-ncs.mp3",
+      "from": 402,
+      "frames": 53
+    },
+    {
+      "id": "06-seizure",
+      "file": "voice/06-seizure.mp3",
+      "from": 482,
+      "frames": 58
+    },
+    {
+      "id": "07-stroke",
+      "file": "voice/07-stroke.mp3",
+      "from": 562,
+      "frames": 38
+    },
+    {
+      "id": "08-pharmacy",
+      "file": "voice/08-pharmacy.mp3",
+      "from": 642,
+      "frames": 75
+    },
+    {
+      "id": "09-steps",
+      "file": "voice/09-steps.mp3",
+      "from": 723,
+      "frames": 149
+    },
+    {
+      "id": "10-cta",
+      "file": "voice/10-cta.mp3",
+      "from": 902,
+      "frames": 250
+    }
+  ],
+  "ctaFrames": 297
 }

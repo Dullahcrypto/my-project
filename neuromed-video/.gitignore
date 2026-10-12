@@ -1,3 +1,4 @@
 node_modules/
 out/*.tmp
 .cache/
+voiceover/source/.normalized.wav

@@ -8,8 +8,8 @@ A 35-second animated explainer of Neuromed Clinic's services, built with
 | `out/neuromed-9x16.mp4` | 1080×1920, 9:16 | WhatsApp Status, Instagram Reels, TikTok |
 | `out/neuromed-16x9.mp4` | 1920×1080, 16:9 | Website, YouTube, Facebook |
 
-Both are H.264, 30 fps, 35 s, **silent** (designed to work with sound off; add
-music inside Instagram/TikTok, or in any video editor). `stills/` holds a review
+Both are H.264, 30 fps, 39.9 s, with an ElevenLabs voiceover (AAC audio). Every key
+line also appears as on-screen text, so they still work with the sound off. `stills/` holds a review
 frame from every scene in both formats.
 
 ## Storyboard
@@ -43,6 +43,15 @@ The narration script is in `voiceover/SCRIPT.md`; the exact lines and timings ar
 4. `npm run render` to re-render both MP4s with the voice.
 
 To go back to silent, set `"enabled": false` in `src/voice-manifest.json`.
+
+**Current voice:** a single ElevenLabs recording (voice "Gemnda", Podcast Narrative),
+kept in `voiceover/source/elevenlabs-full.mp3`. `python3 voiceover/fit_recording.py`
+levels it to ~-16 LUFS, cuts it at the pauses into the ten scene lines and places each
+on its scene; the end card stretches so the video runs 39.9 s. To use a new recording of
+the same script, replace that file, adjust the cut times in `fit_recording.py` if the
+pauses moved, and re-run it before `npm run render`.
+
+Commercial use of ElevenLabs audio requires a paid ElevenLabs plan.
 
 ## Edit
 
