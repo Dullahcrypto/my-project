@@ -86,7 +86,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   transition: transform .3s cubic-bezier(.2,.7,.2,1);
   border-bottom: 1px solid rgba(7,18,43,.06);
 }
-.nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding-top: 18px; padding-bottom: 18px; }
+.nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: nowrap; padding-top: 18px; padding-bottom: 18px; }
+.brand { flex: none; }
 .brand { display: flex; align-items: center; gap: 14px; color: var(--ink); }
 .brand:hover { color: var(--ink); }
 .brand img { width: 58px; height: 58px; border-radius: 50%; object-fit: cover; object-position: 42% 45%; border: 1px solid rgba(7,18,43,.12); }
@@ -366,6 +367,12 @@ html:not(.js) .book-form button[type="submit"] { display: none; }
   .js .reveal { opacity: 1; transform: none; }
   .js .timeline-line.reveal { transform: none; }
   .hero-pop { transform: rotate(4deg); }
+}
+
+/* Tablets: the full menu doesn't fit beside the clinic name, so use the link row */
+@media (min-width: 761px) and (max-width: 1100px) {
+  .nav-links { display: none; }
+  .mnav { display: flex; gap: 28px; padding-bottom: 8px; }
 }
 
 /* Small screens */
