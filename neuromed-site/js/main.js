@@ -90,7 +90,7 @@
   }
 
   // Phones: hide the header while scrolling down, bring it back when scrolling up,
-  // and show the quick-contact bar once the visitor is past the top section.
+  // and move the quick-contact bar aside while the booking form is on screen.
   var header = document.querySelector('.site-header');
   var mbar = document.getElementById('mbar');
   var hero = document.getElementById('top');
@@ -111,10 +111,8 @@
       header.classList.remove('is-hidden');
       lastY = y;
     }
-    if (mbar && hero) {
-      var pastHero = y > hero.offsetTop + hero.offsetHeight * 0.6;
-      mbar.classList.toggle('is-visible', phone.matches && pastHero && !bookInView);
-    }
+    if (mbar) mbar.classList.toggle('is-hidden', bookInView);
+    if (header && hero) header.classList.toggle('show-cta', y > hero.offsetTop + hero.offsetHeight * 0.55);
     ticking = false;
   }
 
