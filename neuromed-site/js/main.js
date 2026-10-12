@@ -65,4 +65,72 @@
 
   var year = document.getElementById('year');
   if (year) year.textContent = String(new Date().getFullYear());
+
+  // Scroll reveals: fade sections in as they enter the screen.
+  var reveals = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    // Stagger items that sit side by side or in a list.
+    reveals.forEach(function (el) {
+      var group = el.parentElement && el.parentElement.tagName === 'LI' ? el.parentElement.parentElement : el.parentElement;
+      var siblings = group ? group.querySelectorAll(':scope > .reveal, :scope > li > .reveal') : [];
+      var index = Array.prototype.indexOf.call(siblings, el);
+      if (index > 0) el.style.setProperty('--delay', Math.min(index, 4) * 0.08 + 's');
+    });
+    var revealer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-in');
+          revealer.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+    reveals.forEach(function (el) { revealer.observe(el); });
+  } else {
+    reveals.forEach(function (el) { el.classList.add('is-in'); });
+  }
+
+  // Phones: hide the header while scrolling down, bring it back when scrolling up,
+  // and show the quick-contact bar once the visitor is past the top section.
+  var header = document.querySelector('.site-header');
+  var mbar = document.getElementById('mbar');
+  var hero = document.getElementById('top');
+  var phone = window.matchMedia('(max-width: 760px)');
+  var lastY = window.scrollY;
+  var ticking = false;
+  var bookInView = false;
+
+  function onScroll() {
+    var y = window.scrollY;
+    if (phone.matches && header) {
+      var goingDown = y > lastY;
+      if (Math.abs(y - lastY) > 6) {
+        header.classList.toggle('is-hidden', goingDown && y > 160);
+        lastY = y;
+      }
+    } else if (header) {
+      header.classList.remove('is-hidden');
+      lastY = y;
+    }
+    if (mbar && hero) {
+      var pastHero = y > hero.offsetTop + hero.offsetHeight * 0.6;
+      mbar.classList.toggle('is-visible', phone.matches && pastHero && !bookInView);
+    }
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', function () {
+    if (!ticking) {
+      ticking = true;
+      window.requestAnimationFrame(onScroll);
+    }
+  }, { passive: true });
+
+  // Keep the bar out of the way while the booking form is on screen.
+  var book = document.getElementById('book');
+  if (book && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (entries) {
+      bookInView = entries[0].isIntersecting;
+      onScroll();
+    }, { threshold: 0.15 }).observe(book);
+  }
 })();

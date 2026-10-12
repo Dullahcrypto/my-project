@@ -21,7 +21,8 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+a, button, summary { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
 body {
   margin: 0;
@@ -82,6 +83,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   position: sticky; top: 0; z-index: 20;
   background: rgba(214,230,255,.9);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  transition: transform .3s cubic-bezier(.2,.7,.2,1);
   border-bottom: 1px solid rgba(7,18,43,.06);
 }
 .nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding-top: 18px; padding-bottom: 18px; }
@@ -142,20 +144,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .people-head p.lede { max-width: 400px; }
 .ribbon-wrap { overflow: hidden; }
 .ribbon { display: flex; gap: 16px; width: max-content; align-items: center; padding: 8px 16px 8px 0; }
-.ribbon-wrap:hover .ribbon { animation-play-state: paused; }
 .tile { margin: 0; position: relative; flex: none; border-radius: 18px; overflow: hidden; background: #E9EDF5; }
 .tile img { width: 100%; height: 100%; object-fit: cover; transition: transform .9s cubic-bezier(.2,.7,.2,1); }
-.tile:hover img { transform: scale(1.07); }
 .tile figcaption, .photo figcaption {
   position: absolute; left: 14px; bottom: 14px; padding: 7px 11px; border-radius: 8px; font-size: 12px;
 }
 .tile figcaption { background: #fff; color: var(--ink); transition: transform .4s cubic-bezier(.2,.7,.2,1); }
-.tile:hover figcaption { transform: translateY(-4px); }
 
 /* Generic photo frame */
 .photo { margin: 0; position: relative; border-radius: 20px; overflow: hidden; background: #E9EDF5; }
 .photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 1s cubic-bezier(.2,.7,.2,1); }
-.photo:hover img { transform: scale(1.04); }
 .photo figcaption { left: 16px; bottom: 16px; padding: 8px 12px; background: rgba(7,18,43,.8); color: #fff; }
 
 /* Intro */
@@ -180,7 +178,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   padding: 28px 12px; border-bottom: 1px solid var(--line); color: var(--ink);
   transition: background .3s;
 }
-.service:hover { background: #E9EDF4; color: var(--ink); }
 .service-n { font-size: 14px; color: var(--muted); padding-top: 6px; }
 .service-body { display: flex; flex-direction: column; gap: 6px; }
 .service-title { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
@@ -190,7 +187,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   display: flex; align-items: center; justify-content: center;
   transition: transform .3s, background .3s, color .3s, border-color .3s;
 }
-.service:hover .arrow { transform: rotate(-45deg); background: var(--blue); color: #fff; border-color: var(--blue); }
 
 /* Epilepsy */
 .epilepsy { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 72px; align-items: center; padding-top: 120px; padding-bottom: 120px; }
@@ -280,7 +276,6 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .visit-us { display: flex; flex-direction: column; gap: 28px; }
 .map-card { position: relative; display: block; border-radius: 20px; height: 340px; overflow: hidden; background: #E9EDF5; color: var(--ink); }
 .map-card img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 55%; transition: transform 1s cubic-bezier(.2,.7,.2,1); }
-.map-card:hover img { transform: scale(1.04); }
 .map-tag { position: absolute; left: 16px; top: 16px; background: #fff; color: var(--ink); padding: 7px 11px; border-radius: 8px; font-size: 12px; }
 .map-open { position: absolute; left: 16px; bottom: 16px; background: var(--ink); color: #fff; padding: 11px 16px; border-radius: 10px; font-weight: 500; font-size: 14px; }
 .address-1 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.35; }
@@ -302,12 +297,30 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .footer-links a { color: #C3CEE8; }
 .footer-links a:hover { color: #fff; }
 
+/* Phone quick-contact bar */
+.mbar { display: none; }
+
 /* Privacy page */
 .doc { max-width: 760px; margin: 0 auto; padding: 72px 40px 110px; }
 .doc h1 { font-size: 52px; line-height: 1.05; letter-spacing: -0.035em; font-weight: 600; margin: 12px 0 8px; }
 .doc h2 { font-size: 26px; letter-spacing: -0.02em; font-weight: 600; margin: 48px 0 12px; }
 .doc p, .doc li { color: var(--text); }
 .doc ul { padding-left: 22px; }
+
+/* Hover effects (mouse and trackpad only) */
+@media (hover: hover) {
+  .ribbon-wrap:hover .ribbon { animation-play-state: paused; }
+  .tile:hover img { transform: scale(1.07); }
+  .tile:hover figcaption { transform: translateY(-4px); }
+  .photo:hover img { transform: scale(1.04); }
+  .service:hover { background: #E9EDF4; color: var(--ink); }
+  .service:hover .arrow { transform: rotate(-45deg); background: var(--blue); color: #fff; border-color: var(--blue); }
+  .map-card:hover img { transform: scale(1.04); }
+}
+
+/* Tap feedback */
+.btn:active, .mbar-btn:active, .service:active, .faq-q:active { transform: scale(.98); }
+.service:active { background: #E9EDF4; }
 
 /* Motion */
 @keyframes scroll-x { from { transform: translateX(0); } to { transform: translateX(-50%); } }
@@ -325,14 +338,27 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .hero-pop { animation: pop 1.2s .6s cubic-bezier(.2,.7,.2,1) both; }
 .faq-a:not([hidden]) { animation: rise .45s cubic-bezier(.2,.7,.2,1) both; }
 
-@supports (animation-timeline: view()) {
-  .reveal { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% cover 25%; }
-  .timeline-line { animation: grow-x linear both; animation-timeline: view(); animation-range: entry 10% cover 45%; }
-  .band img { animation: ken linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+.js .reveal {
+  opacity: 0; transform: translateY(28px);
+  transition: opacity .7s ease, transform .8s cubic-bezier(.2,.7,.2,1);
+  transition-delay: var(--delay, 0s);
+}
+.js .reveal.is-in { opacity: 1; transform: none; }
+.js .timeline-line.reveal { opacity: 1; transform: scaleX(0); transition: transform 1.2s cubic-bezier(.2,.7,.2,1); }
+.js .timeline-line.reveal.is-in { transform: scaleX(1); }
+
+/* Slow zoom on the full-width photo: desktop only, where scroll-linked animation is smooth */
+@media (min-width: 761px) and (hover: hover) {
+  @supports (animation-timeline: view()) {
+    .band img { animation: ken linear both; animation-timeline: view(); animation-range: entry 0% exit 100%; }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  .js .reveal { opacity: 1; transform: none; }
+  .js .timeline-line.reveal { transform: none; }
   .hero-pop { transform: rotate(4deg); }
 }
 
@@ -358,5 +384,88 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .step { padding: 0 0 0 24px; }
   .step::before { top: 2px; left: -8px; }
   .doc { padding: 48px 20px 80px; }
+
+  /* Compact header: hours stay in the contact section, header hides while scrolling down */
+  .topbar-hours { display: none; }
+  .topbar .wrap { justify-content: center; padding-top: 8px; padding-bottom: 8px; }
+  .site-header { background: rgba(214,230,255,.97); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .site-header.is-hidden { transform: translateY(-100%); }
+  .nav { padding-top: 10px; padding-bottom: 6px; gap: 12px; }
+  .brand img { width: 38px; height: 38px; }
+  .brand-sub { display: none; }
+  .nav .btn-sm { padding: 10px 16px; font-size: 14px; }
+  .mnav { gap: 22px; scrollbar-width: none; }
+  .mnav::-webkit-scrollbar { display: none; }
+  [id] { scroll-margin-top: 112px; }
+
+  /* Hero: tighter, full-width buttons for thumbs */
+  .hero-grid { padding-top: 36px; gap: 36px; }
+  .hero-copy { gap: 20px; }
+  .hero-sub { font-size: 18px; }
+  .hero-actions { flex-direction: column; }
+  .hero-actions .btn { justify-content: center; width: 100%; }
+  .hero-photo { height: 380px; border-radius: 20px; }
+  .hero-tests { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 32px; }
+  .hero-tests li { padding: 16px 12px 16px 0; }
+  .hero-tests strong { font-size: 16px; }
+  .wave { height: 56px; }
+
+  /* Photo strip: swipe with a finger instead of auto-scrolling */
+  .people { padding-top: 72px; }
+  .people-head { padding-bottom: 28px; }
+  .ribbon-wrap { overflow: visible; }
+  .ribbon {
+    animation: none; width: auto; overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory; scroll-padding-left: 20px;
+    padding: 4px 20px 12px; gap: 12px; scrollbar-width: none;
+  }
+  .ribbon::-webkit-scrollbar { display: none; }
+  .tile { width: 72vw !important; max-width: 280px; height: 340px !important; scroll-snap-align: start; }
+  .tile[aria-hidden="true"] { display: none; }
+
+  /* Section spacing */
+  .intro { padding-top: 72px; padding-bottom: 64px; gap: 32px; }
+  .intro .photo { height: 280px; }
+  .services .wrap, .visit .wrap, .faq .wrap { padding-top: 72px; padding-bottom: 72px; }
+  .split { gap: 28px; }
+  .service { padding: 22px 4px; }
+  .epilepsy { padding-top: 72px; padding-bottom: 72px; gap: 32px; }
+  .epilepsy .photo { height: 380px; }
+  .epilepsy-copy .btn, .band .btn, .book-form .btn { align-self: stretch; justify-content: center; }
+  .band-inner { padding-bottom: 40px; }
+  .visit-head { margin-bottom: 40px; }
+  .why { padding-top: 72px; padding-bottom: 64px; }
+  .strip { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 72vw; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -20px 56px; padding: 0 20px; scrollbar-width: none; }
+  .strip::-webkit-scrollbar { display: none; }
+  .strip .photo { height: 240px; scroll-snap-align: center; }
+  .js .strip .reveal { opacity: 1; transform: none; }
+  .faq-q { font-size: 18px; padding: 20px 4px; }
+  .faq-a { padding-right: 8px; font-size: 16px; }
+  .contact { padding-top: 72px; padding-bottom: 72px; }
+  .contact-grid { gap: 56px; }
+  .map-card { height: 240px; }
+  .contact-facts { grid-template-columns: 1fr; }
+  .site-footer .wrap { padding-top: 56px; }
+
+  /* Quick-contact bar */
+  .mbar {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+    background: rgba(255,255,255,.98); border-top: 1px solid var(--line);
+    box-shadow: 0 -8px 24px -12px rgba(7,18,43,.25);
+    transform: translateY(110%); transition: transform .35s cubic-bezier(.2,.7,.2,1);
+  }
+  .mbar.is-visible { transform: none; }
+  .mbar-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px;
+    border-radius: 10px; font-weight: 600; font-size: 15px; color: var(--ink); border: 1px solid #C9D0DE;
+  }
+  .mbar-btn:hover { color: var(--ink); }
+  .mbar-wa { background: var(--wa); border-color: var(--wa); color: #fff; }
+  .mbar-wa:hover { color: #fff; }
+  .mbar-book { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .mbar-book:hover { color: #fff; }
+  body:has(.mbar) { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
   .doc h1 { font-size: 38px; }
 }

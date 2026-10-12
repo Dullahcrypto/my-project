@@ -24,7 +24,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
-<link rel="preload" as="image" href="assets/img/hero_hijab.webp">
+<link rel="preload" as="image" href="assets/img/hero_hijab.webp" imagesrcset="assets/img/hero_hijab-800.webp 800w, assets/img/hero_hijab.webp 1200w" imagesizes="(max-width: 760px) 100vw, 50vw">
+<script>document.documentElement.classList.add('js');</script>
 <link rel="stylesheet" href="css/styles.css">
 
 <script type="application/ld+json">
@@ -64,7 +65,7 @@
 
 <div class="topbar">
   <div class="wrap">
-    <span>Mon–Fri 9:00–19:00 · Sat 10:00–14:00 · Special consults by appointment</span>
+    <span class="topbar-hours">Mon–Fri 9:00–19:00 · Sat 10:00–14:00 · Special consults by appointment</span>
     <span class="phones"><a href="tel:+2348131026221">0813 102 6221</a><a href="tel:+2348100070670">0810 007 0670</a></span>
   </div>
 </div>
@@ -113,7 +114,7 @@
     </div>
     <div class="hero-media rise d2">
       <div class="hero-photo">
-        <img src="assets/img/hero_hijab.webp" alt="A young doctor in a hijab wearing a stethoscope" width="1200" height="1500" fetchpriority="high">
+        <img src="assets/img/hero_hijab.webp" srcset="assets/img/hero_hijab-800.webp 800w, assets/img/hero_hijab.webp 1200w" sizes="(max-width: 760px) 100vw, 50vw" alt="A young doctor in a hijab wearing a stethoscope" width="1200" height="1500" fetchpriority="high">
       </div>
       <div class="hero-pop">
         <img src="assets/img/hero_smile.webp" alt="A smiling doctor with a stethoscope around her neck" width="600" height="400">
@@ -169,7 +170,7 @@
 <section class="wrap intro" aria-label="About Neuromed">
   <p class="intro-lead reveal">Neuromed is a neurology clinic in Jabi, Abuja. <span>We find out what is happening in the brain and nerves, explain it plainly, and treat it, so patients and families are not passed from place to place.</span></p>
   <figure class="photo reveal">
-    <img loading="lazy" decoding="async" src="assets/img/intro_xray.webp" alt="A doctor in a white coat reviewing a scan" width="1200" height="800">
+    <img loading="lazy" decoding="async" src="assets/img/intro_xray.webp" srcset="assets/img/intro_xray-800.webp 800w, assets/img/intro_xray.webp 1200w" sizes="(max-width: 760px) 100vw, 50vw" alt="A doctor in a white coat reviewing a scan" width="1200" height="800">
     <figcaption class="mono">Specialist review</figcaption>
   </figure>
 </section>
@@ -194,7 +195,7 @@
 
 <section id="epilepsy" class="wrap epilepsy" aria-labelledby="epilepsy-title">
   <figure class="photo reveal">
-    <img loading="lazy" decoding="async" src="assets/img/epi_doctor.webp" alt="A confident doctor in a white coat with her arms folded" width="1100" height="1424">
+    <img loading="lazy" decoding="async" src="assets/img/epi_doctor.webp" srcset="assets/img/epi_doctor-800.webp 800w, assets/img/epi_doctor.webp 1100w" sizes="(max-width: 760px) 100vw, 50vw" alt="A confident doctor in a white coat with her arms folded" width="1100" height="1424">
     <figcaption class="mono">Epilepsy care</figcaption>
   </figure>
   <div class="epilepsy-copy reveal">
@@ -214,7 +215,7 @@
 </section>
 
 <section class="band" aria-labelledby="band-title">
-  <img loading="lazy" decoding="async" src="assets/img/band_kids.webp" alt="A group of Nigerian children laughing together" width="1600" height="1280">
+  <img loading="lazy" decoding="async" src="assets/img/band_kids.webp" srcset="assets/img/band_kids-800.webp 800w, assets/img/band_kids.webp 1600w" sizes="100vw" alt="A group of Nigerian children laughing together" width="1600" height="1280">
   <div class="wrap band-inner">
     <div class="band-copy reveal">
       <p class="eyebrow mono">Why it matters</p>
@@ -233,7 +234,7 @@
       </div>
       <a class="btn btn-outline-dark" href="#book">Start with step one</a>
     </div>
-    <div class="timeline-line" aria-hidden="true"></div>
+    <div class="timeline-line reveal" aria-hidden="true"></div>
     <ol class="steps">
       <li class="step reveal"><span class="mono">01</span><h3>Book</h3><p>Call, WhatsApp or send the form. We confirm a time that suits you, Saturdays included.</p></li>
       <li class="step reveal"><span class="mono">02</span><h3>Consult</h3><p>The neurologist listens, examines you and decides which tests you actually need.</p></li>
@@ -333,7 +334,7 @@
 
     <div class="visit-us reveal">
       <a class="map-card" href="https://www.google.com/maps/search/?api=1&amp;query=Arewa+Specialist+Hospital+Jabi+Abuja" target="_blank" rel="noopener">
-        <img loading="lazy" decoding="async" src="assets/img/abuja_mosque.webp" alt="An Abuja road with the golden dome and minarets of the National Mosque" width="1200" height="800">
+        <img loading="lazy" decoding="async" src="assets/img/abuja_mosque.webp" srcset="assets/img/abuja_mosque-800.webp 800w, assets/img/abuja_mosque.webp 1200w" sizes="(max-width: 760px) 100vw, 50vw" alt="An Abuja road with the golden dome and minarets of the National Mosque" width="1200" height="800">
         <span class="map-tag mono">Jabi · Abuja, FCT</span>
         <span class="map-open">Open in Google Maps ↗</span>
       </a>
@@ -380,6 +381,16 @@
     </div>
   </div>
 </footer>
+
+<div class="mbar" id="mbar" aria-label="Quick contact">
+  <a class="mbar-btn" href="tel:+2348131026221">
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+    Call</a>
+  <a class="mbar-btn mbar-wa" href="https://wa.me/2348131026221" target="_blank" rel="noopener">
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 20.5l1.3-4A8.5 8.5 0 1 1 8 19.6z"/><path d="M9 9.5c.3 2 2.3 4.2 4.6 5l1.3-1.3 2 .9-.4 1.6c-3.6.3-7.9-3.6-8-7.2l1.5-.5 1 1.9z"/></svg>
+    WhatsApp</a>
+  <a class="mbar-btn mbar-book" href="#book">Book</a>
+</div>
 
 <script src="js/main.js" defer></script>
 </body>
