@@ -1,0 +1,16 @@
+# Netlify response headers: https://docs.netlify.com/routing/headers/
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-R16CZk/CHRQq8gG/e42TJHITsanSM5Kx8nO/NngyAWM='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Strict-Transport-Security: max-age=31536000
+
+/assets/img/*
+  Cache-Control: public, max-age=604800
+
+/README.md
+  X-Robots-Tag: noindex
+/CREDITS.md
+  X-Robots-Tag: noindex

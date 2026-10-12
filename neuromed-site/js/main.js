@@ -1,6 +1,7 @@
 // Neuromed Medical — page behaviour: FAQ accordion and WhatsApp booking.
 (function () {
   'use strict';
+  window.nmReady = true;
 
   var WHATSAPP_NUMBER = '2348131026221';
 
@@ -79,8 +80,15 @@
     var revealer = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
-          entry.target.classList.add('is-in');
-          revealer.unobserve(entry.target);
+          var el = entry.target;
+          el.classList.add('is-in');
+          revealer.unobserve(el);
+          // Once faded in, drop the reveal styles so the element's own hover and tap
+          // transitions work normally again.
+          setTimeout(function () {
+            el.classList.remove('reveal', 'is-in');
+            el.style.removeProperty('--delay');
+          }, 1400);
         }
       });
     }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
